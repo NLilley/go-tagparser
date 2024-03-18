@@ -53,7 +53,7 @@ func CalculateStats(tag *Tag) (stats Stats) {
 		}
 
 		if t.Attributes != nil {
-			for key, _ := range t.Attributes {
+			for key := range t.Attributes {
 				stats.TotalAttributes += 1
 				count, ok := stats.AttributeHistogram[key]
 				if !ok {

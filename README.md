@@ -10,7 +10,7 @@
                                                             Go-TagParer
 ```
 
-A small parser capable of reading html/xml stlye tag-based documents.
+A small parser capable of reading html/xml style tag-based documents.
 
 ## Project Overview
 
