@@ -79,9 +79,12 @@ func TestParseAttributeKey_ErrorsWithInvalidKeys(t *testing.T) {
 	}
 
 	test_defs := []Def{
+		// Attribute names are restricted in permitted punctuation
 		{input: []rune("ter'=ible"), expectedError: "Unexpected rune"},
 		{input: []rune("teri;=ble"), expectedError: "Unexpected rune"},
+		// No spaces allowed in attribute names (nor valueless attributes)
 		{input: []rune("ter =ble"), expectedError: "Unexpected rune"},
+		// Definitely no newlines
 		{input: []rune("te\nri=ble"), expectedError: "Unexpected rune"},
 	}
 
@@ -111,6 +114,7 @@ func TestParseAttributeValue_WorksWithValidValues(t *testing.T) {
 		{input: []rune("dog='😊😊😊'"), expectedValue: "😊😊😊", startIdx: 4, expectedEndIdx: 8},
 		{input: []rune("dog='___'"), expectedValue: "___", startIdx: 4, expectedEndIdx: 8},
 		{input: []rune("dog='111'"), expectedValue: "111", startIdx: 4, expectedEndIdx: 8},
+		// Escaped values shouldn't cause a parse error at all
 		{input: []rune("dog='11&#34;1'"), expectedValue: "11&#34;1", startIdx: 4, expectedEndIdx: 13},
 	}
 
@@ -136,6 +140,7 @@ func TestParseAttributeValue_FailsWithInvalidValues(t *testing.T) {
 	}
 
 	test_defs := []Def{
+		// Must have clean values with matching quotations
 		{input: []rune("hello='wor\nld'"), startIdx: 6, expectedError: "Unexpected rune in attribute value"},
 		{input: []rune("hello=\"world'"), startIdx: 6, expectedError: "Parser reached the end"},
 		{input: []rune("hello='world\""), startIdx: 6, expectedError: "Parser reached the end"},
@@ -171,9 +176,11 @@ func TestParseAttribute_WorksWithFullPair(t *testing.T) {
 		{input: []rune("A='B' C='D'"), expectedKey: "C", expectedValue: "D", startIdx: 6, expectedEndIdx: 10},
 		{input: []rune("<div A='B'>"), expectedKey: "A", expectedValue: "B", startIdx: 5, expectedEndIdx: 9},
 		{input: []rune("dog='cat'"), expectedKey: "dog", expectedValue: "cat", startIdx: 0, expectedEndIdx: 8},
+		// Unicode properly supported
 		{input: []rune("dog='😊😊😊'"), expectedKey: "dog", expectedValue: "😊😊😊", startIdx: 0, expectedEndIdx: 8},
 		{input: []rune("fox🦊='likes to party 🥳'"), expectedKey: "fox🦊", expectedValue: "likes to party 🥳", startIdx: 0, expectedEndIdx: 22},
 		{input: []rune("dog='111'"), expectedKey: "dog", expectedValue: "111", startIdx: 0, expectedEndIdx: 8},
+		// And escaped values
 		{input: []rune("dog='11&#34;1'"), expectedKey: "dog", expectedValue: "11&#34;1", startIdx: 0, expectedEndIdx: 13},
 	}
 
@@ -268,13 +275,20 @@ func TestParseOpeningTag_CorrectlyParsesNormalOpeningTags(t *testing.T) {
 	}
 
 	test_defs := []Def{
-		{input: []rune("<A B='C'>"), expectedName: "A", startIdx: 0, expectedEndIdx: 9,
+		// Basic Tag
+		{input: []rune("<A B='C'>"), startIdx: 0, expectedName: "A", expectedEndIdx: 9,
 			expectedAttributes: map[string]string{"B": "C"}},
-		{input: []rune("<animal name='Smiles' occupation='Cat'><p></p></animal>"), expectedName: "animal", startIdx: 0, expectedEndIdx: 39,
+		// Fat Tag
+		{input: []rune("<animal name='Smiles' occupation='Cat'><p></p></animal>"), startIdx: 0, expectedName: "animal", expectedEndIdx: 39,
 			expectedAttributes: map[string]string{"name": "Smiles", "occupation": "Cat"}},
-		{input: []rune("<😊 a🤦='🦊'>"), expectedName: "😊", startIdx: 0, expectedEndIdx: 10,
+		// Fun with Unicode
+		{input: []rune("<😊 a🤦='🦊'>"), startIdx: 0, expectedName: "😊", expectedEndIdx: 10,
 			expectedAttributes: map[string]string{"a🤦": "🦊"}},
-		{input: []rune("<>< >Lonely</></ >"), expectedName: "", startIdx: 2, expectedEndIdx: 5},
+		// Empty Tags are parsed correctly
+		{input: []rune("<>< >Lonely</></ >"), startIdx: 2, expectedName: "", expectedEndIdx: 5},
+		// Duplicate attributes
+		{input: []rune("<duplicate dup='a' dup='b'></duplicate>"), startIdx: 0, expectedName: "duplicate", expectedEndIdx: 27,
+			expectedAttributes: map[string]string{"dup": "b"}},
 	}
 
 	for _, def := range test_defs {
