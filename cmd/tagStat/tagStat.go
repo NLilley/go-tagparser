@@ -11,6 +11,7 @@ import (
 )
 
 var inputPath string
+var useStdIn bool
 
 func setupCommandLine() {
 	flag.Usage = func() {
@@ -25,14 +26,14 @@ func setupCommandLine() {
 	}
 
 	flag.StringVar(&inputPath, "i", "", "Path to input tag document. If not provided, the document will be read from stdin instead")
+	flag.BoolVar(&useStdIn, "stdin", false, "Take input from stdin")
 	flag.Parse()
 }
 
-func getDocumentBytes() []byte {
+func getDocumentBytes() (input []byte) {
 	var reader *bufio.Reader
-	if len(inputPath) == 0 {
-		reader = bufio.NewReader(os.Stdin)
-	} else {
+	switch {
+	case len(inputPath) > 0:
 		file, err := os.Open(inputPath)
 		if err != nil {
 			log.Panic(err)
@@ -48,6 +49,14 @@ func getDocumentBytes() []byte {
 		defer cleanUp()
 
 		reader = bufio.NewReader(file)
+	case useStdIn:
+		reader = bufio.NewReader(os.Stdin)
+	default:
+		{
+			flag.Usage()
+			os.Exit(0)
+			return
+		}
 	}
 
 	input, err := io.ReadAll(reader)

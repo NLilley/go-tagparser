@@ -1,13 +1,13 @@
-# Stat - Tag Parser Stat Command
+# TagStat - Tag Parser Stat Command
 
 This small utility will attempt to parse and provide summary statistics for a tag document. If the tag document is incorrectly formed, the error will be logged to standard out.
 
-By default the document will be read from `stdin`. If you provide the `-i="PATH"` argument, it will read the document from the provided file instead.
+If you provide the `-i="PATH"` argument, the input will read the document from the provided file. If you provide the `-stdin` argument, input will be read from standard in. Otherwise help information will be provided.
 
 ## Examples
 ### Standard In
 ```
-echo "<happy><people /></happy>" | go run stat.go
+echo "<happy><people /></happy>" | go run stat.go -stdin
 ```
 
 ### File
