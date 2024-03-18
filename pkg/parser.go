@@ -5,42 +5,27 @@ import (
 	"unicode"
 )
 
-var TextTagName string = "<text>"
-var TextAttributeName string = "text"
-
-type Tag struct {
-	// The name of the tag. May be the empty string
-	name string
-	// The inclusive starting index of the Tag - [startIndex, endIndex)
-	startIdx int
-	// The exclusive ending index of the Tag - [startIndex, endIndex)
-	endIdx int
-	// The 0-indexed depth of nesting
-	depth      int
-	children   []Tag
-	attributes map[string]string
-}
-
 type ParseResult struct {
 	// Root element containing the parsed content of the entire document
-	root Tag
+	Root Tag
 	// After removing leading/trailing whitespace, may not be the same slice as the input
-	document []rune
+	Document []rune
 }
 
 type ParseError struct {
-	startIdx int
-	endIdx   int
-	reason   string
+	StartIdx int
+	EndIdx   int
+	Reason   string
 }
 
 func (e *ParseError) Error() string {
-	return fmt.Sprintf("[%v,%v] %v", e.startIdx, e.endIdx, e.reason)
+	return fmt.Sprintf("[%v,%v] %v", e.StartIdx, e.EndIdx, e.Reason)
 }
 
 // Parse: Convert a string of tag content to a Tag tree structure (like raw HTML tags).
 // It is expected that:
 // - There is a single root tag
+// - Escaped characters should be left in-tact (i.e. &lt; won't be transformed to "<")
 //
 // Note that:
 // - Leading and trailing space characters will be stripped before processing
@@ -51,12 +36,10 @@ func (e *ParseError) Error() string {
 // // i.e. For <p>Content</p>, Content will be wrapped into a tag with Tag.name = "<text>" and attribute text == "Content",
 // - Empty tag attributes (valueless attributes) are not supported (i.e. <checkbox checked/>)
 // - Unicode is mostly support in attribute names, values and the like
-// - Escaped characters are left in-tact (i.e. &lt; won't be transformed to "<")
 // - Whitespace is stripped from either side of raw text content
 func Parse(runes []rune) (result ParseResult, error error) {
-
 	if len(runes) == 0 {
-		return result, &ParseError{reason: "Input in empty"}
+		return result, &ParseError{Reason: "Input in empty"}
 	}
 
 	first_none_space, last_none_space := 0, len(runes)-1
@@ -102,12 +85,12 @@ func parseAttributeKey(runes []rune, startIdx int) (key string, endIdx int, erro
 
 		if !isRuneValidForName(r) {
 			// if !unicode.IsLetter(r) && (currentIdx == startIdx || (!unicode.IsNumber(r) && r != '-' && r != '_' && r != ':' && r != '.')) {
-			return "", -1, &ParseError{startIdx: currentIdx, endIdx: currentIdx + 1, reason: fmt.Sprintf("Unexpected rune in attribute name - %v", string(r))}
+			return "", -1, &ParseError{StartIdx: currentIdx, EndIdx: currentIdx + 1, Reason: fmt.Sprintf("Unexpected rune in attribute name - %v", string(r))}
 		}
 
 		currentIdx += 1
 		if currentIdx >= len(runes) {
-			return "", -1, &ParseError{startIdx: startIdx, endIdx: currentIdx, reason: "Parser reached the end of the input without completing attribute name"}
+			return "", -1, &ParseError{StartIdx: startIdx, EndIdx: currentIdx, Reason: "Parser reached the end of the input without completing attribute name"}
 		}
 	}
 }
@@ -115,7 +98,7 @@ func parseAttributeKey(runes []rune, startIdx int) (key string, endIdx int, erro
 func parseAttributeValue(runes []rune, startIdx int) (value string, endIdx int, error error) {
 	currentIdx := startIdx
 	if runes[currentIdx] != '"' && runes[currentIdx] != '\'' {
-		return "", -1, &ParseError{startIdx: currentIdx, endIdx: currentIdx + 1, reason: fmt.Sprintf("Invalid attribute value quotation. Should be \" or '. Was %v", string(runes[currentIdx]))}
+		return "", -1, &ParseError{StartIdx: currentIdx, EndIdx: currentIdx + 1, Reason: fmt.Sprintf("Invalid attribute value quotation. Should be \" or '. Was %v", string(runes[currentIdx]))}
 	}
 
 	var quotation = runes[currentIdx]
@@ -133,12 +116,12 @@ func parseAttributeValue(runes []rune, startIdx int) (value string, endIdx int, 
 		}
 
 		if !isRuneValidForValue(r) {
-			return "", -1, &ParseError{startIdx: currentIdx, endIdx: currentIdx + 1, reason: fmt.Sprintf("Unexpected rune in attribute value - %v", string(r))}
+			return "", -1, &ParseError{StartIdx: currentIdx, EndIdx: currentIdx + 1, Reason: fmt.Sprintf("Unexpected rune in attribute value - %v", string(r))}
 		}
 
 		currentIdx += 1
 		if currentIdx >= len(runes) {
-			return "", -1, &ParseError{startIdx: valueStart, endIdx: currentIdx, reason: "Parser reached the end of the input without finding attribute value"}
+			return "", -1, &ParseError{StartIdx: valueStart, EndIdx: currentIdx, Reason: "Parser reached the end of the input without finding attribute value"}
 		}
 	}
 }
@@ -167,14 +150,14 @@ func parseAttribute(runes []rune, startIdx int) (key string, value string, endId
 func parseOpeningTag(runes []rune, startIdx int, parent *Tag, depth int) (tag *Tag, exitIdx int, error error) {
 	if runes[startIdx] != rune('<') {
 		// Not a legitimate starting tag
-		return nil, -1, &ParseError{startIdx: startIdx, endIdx: startIdx + 1, reason: fmt.Sprintf("Expected an opening tag - got %v", string(runes[startIdx]))}
+		return nil, -1, &ParseError{StartIdx: startIdx, EndIdx: startIdx + 1, Reason: fmt.Sprintf("Expected an opening tag - got %v", string(runes[startIdx]))}
 	}
 
 	if parent != nil {
-		parent.children = append(parent.children, Tag{startIdx: startIdx, depth: depth})
-		tag = &parent.children[len(parent.children)-1]
+		parent.Children = append(parent.Children, Tag{StartIdx: startIdx, Depth: depth})
+		tag = &parent.Children[len(parent.Children)-1]
 	} else {
-		tag = &Tag{startIdx: startIdx, depth: depth}
+		tag = &Tag{StartIdx: startIdx, Depth: depth}
 	}
 
 	currentIdx := startIdx + 1
@@ -184,12 +167,12 @@ func parseOpeningTag(runes []rune, startIdx int, parent *Tag, depth int) (tag *T
 		r := runes[currentIdx]
 		if r == ' ' || r == '/' || r == '>' {
 			// Successfully found name bounds - Exit loop
-			tag.name = string(runes[startIdx+1 : currentIdx])
+			tag.Name = string(runes[startIdx+1 : currentIdx])
 			break
 		}
 
 		if !isRuneValidForName(r) {
-			return nil, -1, &ParseError{startIdx: currentIdx, endIdx: currentIdx + 1, reason: fmt.Sprintf("Invalid rune in tag name input: %v", r)}
+			return nil, -1, &ParseError{StartIdx: currentIdx, EndIdx: currentIdx + 1, Reason: fmt.Sprintf("Invalid rune in tag name input: %v", r)}
 		}
 
 		currentIdx += 1
@@ -208,13 +191,13 @@ func parseOpeningTag(runes []rune, startIdx int, parent *Tag, depth int) (tag *T
 			// We potentially have a self closing tag.
 			switch {
 			case currentIdx+1 >= len(runes):
-				return nil, -1, &ParseError{startIdx: currentIdx, endIdx: currentIdx, reason: "Expected a closing tag - got end of input"}
+				return nil, -1, &ParseError{StartIdx: currentIdx, EndIdx: currentIdx, Reason: "Expected a closing tag - got end of input"}
 			case runes[currentIdx+1] != '>':
-				return nil, -1, &ParseError{startIdx: currentIdx, endIdx: currentIdx + 1, reason: fmt.Sprintf("Expected a closing tag - got %v", runes[currentIdx+1])}
+				return nil, -1, &ParseError{StartIdx: currentIdx, EndIdx: currentIdx + 1, Reason: fmt.Sprintf("Expected a closing tag - got %v", runes[currentIdx+1])}
 			default:
 				// Must have a valid self-closing tag. Add tag to tag stack, and then return
 				endIdx := currentIdx + 2
-				tag.endIdx = endIdx
+				tag.EndIdx = endIdx
 
 				return tag, endIdx, nil
 			}
@@ -226,8 +209,8 @@ func parseOpeningTag(runes []rune, startIdx int, parent *Tag, depth int) (tag *T
 		}
 
 		if !unicode.IsControl(r) {
-			if tag.name == "" {
-				return nil, -1, &ParseError{startIdx: startIdx, endIdx: currentIdx + 1, reason: "Nameless tags cannot contain attributes"}
+			if tag.Name == "" {
+				return nil, -1, &ParseError{StartIdx: startIdx, EndIdx: currentIdx + 1, Reason: "Nameless tags cannot contain attributes"}
 			}
 
 			// Must be adding a new attribute
@@ -237,10 +220,10 @@ func parseOpeningTag(runes []rune, startIdx int, parent *Tag, depth int) (tag *T
 				return nil, -1, error
 			}
 
-			if tag.attributes == nil {
-				tag.attributes = map[string]string{}
+			if tag.Attributes == nil {
+				tag.Attributes = map[string]string{}
 			}
-			tag.attributes[key] = value
+			tag.Attributes[key] = value
 
 			// Step over closing quote
 			currentIdx += 1
@@ -251,7 +234,7 @@ func parseOpeningTag(runes []rune, startIdx int, parent *Tag, depth int) (tag *T
 				if next_rune == '>' || next_rune == ' ' || next_rune == '/' {
 					continue
 				} else {
-					return nil, -1, &ParseError{startIdx: currentIdx, endIdx: currentIdx + 1, reason: "Attributes must be separated by a space"}
+					return nil, -1, &ParseError{StartIdx: currentIdx, EndIdx: currentIdx + 1, Reason: "Attributes must be separated by a space"}
 				}
 			}
 		}
@@ -259,17 +242,17 @@ func parseOpeningTag(runes []rune, startIdx int, parent *Tag, depth int) (tag *T
 		currentIdx += 1
 	}
 
-	return nil, -1, &ParseError{startIdx: currentIdx, endIdx: len(runes), reason: "Parser reached the end of the input without finding a closing angle bracket >"}
+	return nil, -1, &ParseError{StartIdx: currentIdx, EndIdx: len(runes), Reason: "Parser reached the end of the input without finding a closing angle bracket >"}
 }
 
 func parseClosingTag(runes []rune, startIdx int, opening *Tag) (exitIdx int, error error) {
 	if runes[startIdx] != rune('<') {
 		// Not a legitimate starting tag
-		return -1, &ParseError{startIdx: startIdx, endIdx: startIdx + 1, reason: fmt.Sprintf("Expected an opening angle bracket - got %v", string(runes[startIdx]))}
+		return -1, &ParseError{StartIdx: startIdx, EndIdx: startIdx + 1, Reason: fmt.Sprintf("Expected an opening angle bracket - got %v", string(runes[startIdx]))}
 	}
 
 	if startIdx+1 >= len(runes) || runes[startIdx+1] != '/' {
-		return -1, &ParseError{startIdx: startIdx + 1, endIdx: startIdx + 1, reason: "No / at start of closing tag."}
+		return -1, &ParseError{StartIdx: startIdx + 1, EndIdx: startIdx + 1, Reason: "No / at start of closing tag."}
 	}
 
 	currentIdx := startIdx + 2
@@ -279,17 +262,17 @@ func parseClosingTag(runes []rune, startIdx int, opening *Tag) (exitIdx int, err
 		if r == ' ' || r == '>' {
 			// Successfully found name bounds - Check to see if it matches opening tag
 			name := string(runes[startIdx+2 : currentIdx])
-			if name != opening.name {
-				return -1, &ParseError{startIdx: startIdx, endIdx: currentIdx,
-					reason: fmt.Sprintf("Expected a closing tag. Got %v but needed %v", name, opening.name)}
+			if name != opening.Name {
+				return -1, &ParseError{StartIdx: startIdx, EndIdx: currentIdx,
+					Reason: fmt.Sprintf("Expected a closing tag. Got %v but needed %v", name, opening.Name)}
 			}
 
 			break
 		}
 
 		if !isRuneValidForName(r) {
-			return -1, &ParseError{startIdx: currentIdx, endIdx: currentIdx + 1,
-				reason: fmt.Sprintf("Invalid rune in tag name input: %v", r)}
+			return -1, &ParseError{StartIdx: currentIdx, EndIdx: currentIdx + 1,
+				Reason: fmt.Sprintf("Invalid rune in tag name input: %v", r)}
 		}
 
 		currentIdx += 1
@@ -304,16 +287,16 @@ func parseClosingTag(runes []rune, startIdx int, opening *Tag) (exitIdx int, err
 
 		if r == '>' {
 			// Successfully closed tag
-			opening.endIdx = currentIdx + 1
+			opening.EndIdx = currentIdx + 1
 			return currentIdx + 1, nil
 		}
 
-		return -1, &ParseError{startIdx: currentIdx, endIdx: currentIdx + 1,
-			reason: fmt.Sprintf("Invalid rune in closing tag %v. Expecting closing angle bracket", string(r))}
+		return -1, &ParseError{StartIdx: currentIdx, EndIdx: currentIdx + 1,
+			Reason: fmt.Sprintf("Invalid rune in closing tag %v. Expecting closing angle bracket", string(r))}
 	}
 
-	return -1, &ParseError{startIdx: currentIdx, endIdx: len(runes),
-		reason: "Parser reached the end of the input without finding a closing angle bracket >"}
+	return -1, &ParseError{StartIdx: currentIdx, EndIdx: len(runes),
+		Reason: "Parser reached the end of the input without finding a closing angle bracket >"}
 }
 
 func parseRawContent(runes []rune, startIdx int) (content string, endIdx int) {
@@ -347,7 +330,7 @@ func parseRawContent(runes []rune, startIdx int) (content string, endIdx int) {
 
 func parse(runes []rune) (result ParseResult, error error) {
 	if runes[0] != '<' {
-		return result, &ParseError{reason: "The document must have a single root tag, and it must start from the beginning of the input"}
+		return result, &ParseError{Reason: "The document must have a single root tag, and it must start from the beginning of the input"}
 	}
 
 	tagStack := make([]*Tag, 0)
@@ -371,7 +354,7 @@ func parse(runes []rune) (result ParseResult, error error) {
 				}
 
 				// Self closing tags don't need to be added to the tag stack
-				if newTag.endIdx == 0 {
+				if newTag.EndIdx == 0 {
 					tagStack = append(tagStack, newTag)
 				}
 
@@ -381,7 +364,7 @@ func parse(runes []rune) (result ParseResult, error error) {
 			} else {
 				// Must be a closing tag
 				if previousTag == nil {
-					return result, &ParseError{startIdx: currentIdx, endIdx: currentIdx, reason: "Found a closing tag with no opening tags on the tag"}
+					return result, &ParseError{StartIdx: currentIdx, EndIdx: currentIdx, Reason: "Found a closing tag with no opening tags on the tag"}
 				}
 
 				currentIdx, error = parseClosingTag(runes, currentIdx, previousTag)
@@ -392,12 +375,12 @@ func parse(runes []rune) (result ParseResult, error error) {
 				tagStack = tagStack[:len(tagStack)-1]
 
 				if len(tagStack) == 0 && currentIdx < len(runes) {
-					return result, &ParseError{startIdx: currentIdx, endIdx: currentIdx, reason: "Closed root tag while there was still content to parse."}
+					return result, &ParseError{StartIdx: currentIdx, EndIdx: currentIdx, Reason: "Closed root tag while there was still content to parse."}
 				}
 			}
 		} else {
 			if previousTag == nil {
-				return result, &ParseError{startIdx: currentIdx, endIdx: currentIdx, reason: "Attempting to parse raw content, but there is no parent tag to attach it to"}
+				return result, &ParseError{StartIdx: currentIdx, EndIdx: currentIdx, Reason: "Attempting to parse raw content, but there is no parent tag to attach it to"}
 			}
 
 			if unicode.IsSpace(runes[currentIdx]) {
@@ -410,13 +393,13 @@ func parse(runes []rune) (result ParseResult, error error) {
 			startIdx := currentIdx
 			content, currentIdx = parseRawContent(runes, currentIdx)
 
-			previousTag.children = append(previousTag.children, Tag{name: TextTagName, startIdx: startIdx, endIdx: currentIdx, depth: len(tagStack) + 1,
-				attributes: map[string]string{TextAttributeName: content}})
+			previousTag.Children = append(previousTag.Children, Tag{Name: TextTagName, StartIdx: startIdx, EndIdx: currentIdx, Depth: len(tagStack) + 1,
+				Attributes: map[string]string{TextAttributeName: content}})
 		}
 	}
 
-	result.document = runes
-	result.root = *rootTag
+	result.Document = runes
+	result.Root = *rootTag
 
 	return
 }

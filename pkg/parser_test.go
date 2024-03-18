@@ -1,6 +1,7 @@
 package parser
 
 import (
+	"encoding/xml"
 	"strings"
 	"testing"
 )
@@ -226,16 +227,16 @@ func TestParseOpeningTag_WorksWithValidSelfClosingTags(t *testing.T) {
 		if endIndex != len(def.input) {
 			t.Errorf("Invalid endIndex for input %v", def)
 		}
-		if len(parent.children) != 0 {
-			child := &parent.children[0]
+		if len(parent.Children) != 0 {
+			child := &parent.Children[0]
 			if child != tag {
 				t.Errorf("Newly created tag was not added to parent")
 			}
 		}
-		if tag.name != def.expectedName {
-			t.Errorf("Newly created tag had incorrect name. Name was '%v'. Should be '%v'", tag.name, def.expectedName)
+		if tag.Name != def.expectedName {
+			t.Errorf("Newly created tag had incorrect name. Name was '%v'. Should be '%v'", tag.Name, def.expectedName)
 		}
-		if tag.depth != 10 {
+		if tag.Depth != 10 {
 			t.Errorf("Depth not being set correctly")
 		}
 	}
@@ -299,26 +300,26 @@ func TestParseOpeningTag_CorrectlyParsesNormalOpeningTags(t *testing.T) {
 			continue
 		}
 
-		if tag.endIdx != 0 {
+		if tag.EndIdx != 0 {
 			t.Errorf("Un-closed tag has a non-0 end index set")
 		}
 
-		if tag.name != def.expectedName {
-			t.Errorf("Got tag name %v expected %v", tag.name, def.expectedName)
+		if tag.Name != def.expectedName {
+			t.Errorf("Got tag name %v expected %v", tag.Name, def.expectedName)
 		}
 
 		if endIdx != def.expectedEndIdx {
 			t.Errorf("Got end index %v expected %v", endIdx, def.expectedEndIdx)
 		}
 
-		if (tag.attributes == nil && def.expectedAttributes != nil) ||
-			(tag.attributes != nil && def.expectedAttributes == nil) ||
-			len(tag.attributes) != len(def.expectedAttributes) {
+		if (tag.Attributes == nil && def.expectedAttributes != nil) ||
+			(tag.Attributes != nil && def.expectedAttributes == nil) ||
+			len(tag.Attributes) != len(def.expectedAttributes) {
 			t.Errorf("Invalid number of attributes in parsed result")
 		}
 
 		for key, value := range def.expectedAttributes {
-			gotVal, ok := tag.attributes[key]
+			gotVal, ok := tag.Attributes[key]
 			if !ok || gotVal != value {
 				t.Errorf("Got attribute value %v when expecting %v", gotVal, value)
 			}
@@ -372,7 +373,7 @@ func TestParseClosingTag_WorksWithValidSetup(t *testing.T) {
 	}
 
 	for _, def := range test_defs {
-		openingTag := &Tag{name: def.tagName}
+		openingTag := &Tag{Name: def.tagName}
 		endIdx, error := parseClosingTag(def.input, def.startIdx, openingTag)
 
 		if error != nil {
@@ -380,8 +381,8 @@ func TestParseClosingTag_WorksWithValidSetup(t *testing.T) {
 			continue
 		}
 
-		if endIdx != openingTag.endIdx || endIdx != def.expectedEndIdx {
-			t.Errorf("Expected end indices to be %v but they were %v and %v", def.expectedEndIdx, openingTag.endIdx, endIdx)
+		if endIdx != openingTag.EndIdx || endIdx != def.expectedEndIdx {
+			t.Errorf("Expected end indices to be %v but they were %v and %v", def.expectedEndIdx, openingTag.EndIdx, endIdx)
 		}
 	}
 }
@@ -403,7 +404,7 @@ func TestParseClosingTag_BreaksWithInvalidTags(t *testing.T) {
 	}
 
 	for _, def := range test_defs {
-		openingTag := &Tag{name: def.tagName}
+		openingTag := &Tag{Name: def.tagName}
 		endIdx, err := parseClosingTag(def.input, 0, openingTag)
 
 		if err == nil || !strings.Contains(err.Error(), def.expectedError) {
@@ -452,21 +453,21 @@ func TestParse_WorksWithValidDocument_Simple(t *testing.T) {
 		return
 	}
 
-	root := &result.root
-	if root.name != "p" {
-		t.Errorf("Root tag had name %v but had name %v", root.name, "p")
+	root := &result.Root
+	if root.Name != "p" {
+		t.Errorf("Root tag had name %v but had name %v", root.Name, "p")
 	}
 
-	if len(root.children) != 1 {
-		t.Errorf("Expected root tag to have a single child. It had %v children", len(root.children))
+	if len(root.Children) != 1 {
+		t.Errorf("Expected root tag to have a single child. It had %v children", len(root.Children))
 	}
 
-	child := &result.root.children[0]
-	if child.name != "<text>" {
-		t.Errorf("Expected single child to be a pseudo <text> tag. Got %v", child.name)
+	child := &result.Root.Children[0]
+	if child.Name != "<text>" {
+		t.Errorf("Expected single child to be a pseudo <text> tag. Got %v", child.Name)
 	}
 
-	content, ok := child.attributes["text"]
+	content, ok := child.Attributes["text"]
 	if !ok || content != "Hello, World! 🐶" {
 		t.Errorf("Single child has invalid content. Got %v", content)
 	}
@@ -481,32 +482,32 @@ func TestParse_WorksWithEmptyTags(t *testing.T) {
 		return
 	}
 
-	root := &result.root
-	if root.name != "" {
-		t.Errorf("Root tag had name %v but had name %v", root.name, "p")
+	root := &result.Root
+	if root.Name != "" {
+		t.Errorf("Root tag had name %v but had name %v", root.Name, "p")
 	}
 
-	if len(root.children) != 1 {
-		t.Errorf("Expected root tag to have a single child. It had %v children", len(root.children))
+	if len(root.Children) != 1 {
+		t.Errorf("Expected root tag to have a single child. It had %v children", len(root.Children))
 		return
 	}
 
-	child := &result.root.children[0]
-	if child.name != "" {
-		t.Errorf("Expected single child to be a nameless tag. Got %v", child.name)
+	child := &result.Root.Children[0]
+	if child.Name != "" {
+		t.Errorf("Expected single child to be a nameless tag. Got %v", child.Name)
 	}
 
-	if len(child.children) != 1 {
+	if len(child.Children) != 1 {
 		t.Errorf("Expected root to have a single grandchild")
 		return
 	}
 
-	grandChild := &child.children[0]
-	if grandChild.name != "<text>" {
-		t.Errorf("Expected single grandchild to a raw text tag. Got %v", grandChild.name)
+	grandChild := &child.Children[0]
+	if grandChild.Name != "<text>" {
+		t.Errorf("Expected single grandchild to a raw text tag. Got %v", grandChild.Name)
 	}
 
-	content, ok := grandChild.attributes["text"]
+	content, ok := grandChild.Attributes["text"]
 	if !ok || content != "Lonely!" {
 		t.Errorf("Payload Incorrect! Got '%v' but want '%v'", content, "Lonely!")
 	}
@@ -528,63 +529,63 @@ func TestParse_WorksWithCompoundObject(t *testing.T) {
 		return
 	}
 
-	root := &result.root
-	if root.name != "html" {
-		t.Errorf("Expected root to be a HTML element. Got %v", root.name)
+	root := &result.Root
+	if root.Name != "html" {
+		t.Errorf("Expected root to be a HTML element. Got %v", root.Name)
 	}
 
-	html_lang, ok := root.attributes["lang"]
+	html_lang, ok := root.Attributes["lang"]
 	if !ok || html_lang != "en" {
 		t.Errorf("Expected root to have attribute lang='en'. Got %v", html_lang)
 	}
 
-	if len(root.children) != 2 {
-		t.Errorf("Root should have 2 child elements. Got %v", len(root.children))
+	if len(root.Children) != 2 {
+		t.Errorf("Root should have 2 child elements. Got %v", len(root.Children))
 		return
 	}
 
-	head := root.children[0]
-	body := root.children[1]
+	head := root.Children[0]
+	body := root.Children[1]
 
-	if head.name != "head" {
-		t.Errorf("Head element has wrong name. Got %v", head.name)
+	if head.Name != "head" {
+		t.Errorf("Head element has wrong name. Got %v", head.Name)
 	}
 
-	if len(head.children) > 0 {
-		t.Errorf("Expecting head to have no children. Got %v", head.children)
+	if len(head.Children) > 0 {
+		t.Errorf("Expecting head to have no children. Got %v", head.Children)
 	}
 
-	if body.name != "body" {
-		t.Errorf("Body element has wrong name. Got %v", body.name)
+	if body.Name != "body" {
+		t.Errorf("Body element has wrong name. Got %v", body.Name)
 	}
 
-	if len(body.children) != 2 {
-		t.Errorf("Body element should have 2 children. It has %v", len(body.children))
+	if len(body.Children) != 2 {
+		t.Errorf("Body element should have 2 children. It has %v", len(body.Children))
 		return
 	}
 
-	first_p := body.children[0]
-	second_p := body.children[1]
+	first_p := body.Children[0]
+	second_p := body.Children[1]
 
-	if first_p.name != "p" || second_p.name != "p" {
-		t.Errorf("p tags parsed with incorrect names. Got %v and %v", first_p.name, second_p.name)
+	if first_p.Name != "p" || second_p.Name != "p" {
+		t.Errorf("p tags parsed with incorrect names. Got %v and %v", first_p.Name, second_p.Name)
 	}
 
-	first_p_style, ok := first_p.attributes["style"]
+	first_p_style, ok := first_p.Attributes["style"]
 	if !ok || first_p_style != "font-weight:bold;" {
 		t.Errorf("first p style attribute parsed incorrectly")
 	}
 
-	if second_p.attributes != nil {
+	if second_p.Attributes != nil {
 		t.Errorf("second p has attributes when it should not")
 	}
 
-	first_content := first_p.children[0].attributes["text"]
+	first_content := first_p.Children[0].Attributes["text"]
 	if first_content != "Cool" {
 		t.Errorf("first p content is incorrect. Got %v want %v", first_content, "Cool")
 	}
 
-	second_content := second_p.children[0].attributes["text"]
+	second_content := second_p.Children[0].Attributes["text"]
 	if second_content != "Beans!" {
 		t.Errorf("second p content is correct. Got %v want %v", second_content, "Beans!")
 	}
@@ -598,8 +599,30 @@ func TestParse_IgnoresSurroundingSpace(t *testing.T) {
 		t.Errorf("Expecting parse to succeed but it failed with error: %v", error)
 	}
 
-	content := result.root.children[0].attributes["text"]
+	content := result.Root.Children[0].Attributes["text"]
 	if content != "Hello!" {
 		t.Errorf("Content parsed incorrectly. Got %v but want %v", content, "Hello!")
 	}
 }
+
+//region Benchmarks
+
+var simpleDocument []rune = []rune("<html><head><title>Small Test Document</title></head><body><div>Your Content Here!</div></body></html>")
+var simpleDocumentBytes []byte = []byte(string(simpleDocument))
+
+func BenchmarkParser_SimpleDocument(b *testing.B) {
+	for n := 0; n < b.N; n++ {
+		Parse(simpleDocument)
+	}
+}
+
+func BenchmarkParser_SimpleDocument_StandardLib(b *testing.B) {
+	type Html struct{}
+	html := Html{}
+
+	for n := 0; n < b.N; n++ {
+		xml.Unmarshal(simpleDocumentBytes, &html)
+	}
+}
+
+//endregion Benchmarks
