@@ -589,7 +589,3 @@ func TestParse_IgnoresSurroundingSpace(t *testing.T) {
 		t.Errorf("Content parsed incorrectly. Got %v but want %v", content, "Hello!")
 	}
 }
-
-// Things to Test
-// - Empty tags with content
-// - Nameless tags mustn't have any attributes
