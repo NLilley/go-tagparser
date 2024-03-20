@@ -31,7 +31,7 @@ func toJson(tag *Tag, sb *strings.Builder, depth int) (error error) {
 	if tag.Name == "<text>" {
 		text, ok := tag.Attributes["text"]
 		if !ok {
-			return fmt.Errorf("Text tag is missing it's required text. Cannot render.")
+			return fmt.Errorf("text tag is missing it's required text. cannot render")
 		}
 		sb.WriteString(fmt.Sprintf("%v\"%v\"", root_header, text))
 		return

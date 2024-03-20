@@ -38,6 +38,10 @@ func (s *Stats) Render() string {
 }
 
 func CalculateStats(tag *Tag) (stats Stats) {
+	if tag == nil {
+		return
+	}
+
 	stats.TagHistogram = map[string]int{}
 	stats.AttributeHistogram = map[string]int{}
 
