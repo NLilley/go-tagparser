@@ -4,7 +4,7 @@ import (
 	"bufio"
 	"flag"
 	"fmt"
-	parser "go-tagparser/tagparser"
+	parser "go-tagparser/pkg/tagparser"
 	"io"
 	"log"
 	"os"
