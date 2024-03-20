@@ -20,6 +20,8 @@ The parser output is tree of tags representing your document. Each tag has one o
 
 Alternatively, you can use the [/cmd/tagStat](/cmd/tagStat/README.md) command to provide a concise summary of the documents contents. To install, run `go install ./cmd/tagStat`. See the README for more detailed usage instructions.
 
+There is also the [.cmd/tagJsonify](/cmd/tagJsonify/README.md) command to quickly dump the Tag Documents contents to JSON. The README contains detailed usage instructions.
+
 ## Parser Specification
 
 The parser expects that:
