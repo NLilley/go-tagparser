@@ -16,17 +16,18 @@ var useStdIn bool
 func setupCommandLine() {
 	flag.Usage = func() {
 		w := flag.CommandLine.Output()
-		fmt.Fprintln(w, "\ntagStat - Simple Tag Statistics")
+		fmt.Fprintln(w, "\njsonify - Simple Tag Document Jsonification")
 		fmt.Fprintln(w, "-------------------------------------")
-		fmt.Fprintln(w, "This program will quickly parse a tag document, outputting helpful statistics to standard out")
-		fmt.Fprintln(w, "You must specify either -i to provide an input file, or -stdin input to read your input from standard in.")
+		fmt.Fprintln(w, "This program will convert your json input into a simple json file.")
+		fmt.Fprintln(w, "You must specify either -i to provide an input file, or -stdin to read your input from standard in.")
+		fmt.Fprintln(w, "Output will be written to standard out.")
 		fmt.Fprintln(w, "Invalid input will result in an error log and program termination.")
 		fmt.Fprintln(w, "Arguments:")
 		flag.PrintDefaults()
 
-		fmt.Println("\nExamples:")
-		fmt.Println("\ttagStat -i ./test.html")
-		fmt.Println("\techo \"<div>Hello, World!</div>\" | tagStat -stdin")
+		fmt.Fprintln(w, "\nExamples:")
+		fmt.Fprintln(w, "\ttagJsonify -i ./test.html > test.json")
+		fmt.Fprintln(w, "\techo \"<div>Hello, World!</div>\" | tagJsonify -stdin")
 	}
 
 	flag.StringVar(&inputPath, "i", "", "Path to input tag document. If not provided, the document will be read from stdin instead")
@@ -81,12 +82,6 @@ func main() {
 		log.Fatalf("Error occurred parsing input - %v", error)
 	}
 
-	fmt.Println("Input:")
-	fmt.Println(stringInput)
-	fmt.Print("\n\n")
-
-	stats := parser.CalculateStats(&result.Root)
-	renderedStats := stats.Render()
-
-	log.Println(renderedStats)
+	json := result.Root.ToJson()
+	os.Stdout.WriteString(json)
 }

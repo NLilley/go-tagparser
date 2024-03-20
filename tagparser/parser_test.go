@@ -1,4 +1,4 @@
-package parser
+package tagparser
 
 import (
 	"encoding/xml"

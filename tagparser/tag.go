@@ -1,4 +1,4 @@
-package parser
+package tagparser
 
 var TextTagName string = "<text>"
 var TextAttributeName string = "text"
