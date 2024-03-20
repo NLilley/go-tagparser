@@ -449,8 +449,7 @@ func TestParse_WorksWithValidDocument_Simple(t *testing.T) {
 	result, error := Parse(input)
 
 	if error != nil {
-		t.Errorf("Expected Parse to succeeded, but it failed with error %v", error)
-		return
+		t.Fatalf("Expected Parse to succeeded, but it failed with error %v", error)
 	}
 
 	root := &result.Root
@@ -478,8 +477,7 @@ func TestParse_WorksWithEmptyTags(t *testing.T) {
 	result, error := Parse(input)
 
 	if error != nil {
-		t.Errorf("Expected Parse to succeeded, but it failed with error %v", error)
-		return
+		t.Fatalf("Expected Parse to succeeded, but it failed with error %v", error)
 	}
 
 	root := &result.Root
@@ -488,8 +486,7 @@ func TestParse_WorksWithEmptyTags(t *testing.T) {
 	}
 
 	if len(root.Children) != 1 {
-		t.Errorf("Expected root tag to have a single child. It had %v children", len(root.Children))
-		return
+		t.Fatalf("Expected root tag to have a single child. It had %v children", len(root.Children))
 	}
 
 	child := &result.Root.Children[0]
@@ -498,8 +495,7 @@ func TestParse_WorksWithEmptyTags(t *testing.T) {
 	}
 
 	if len(child.Children) != 1 {
-		t.Errorf("Expected root to have a single grandchild")
-		return
+		t.Fatalf("Expected root to have a single grandchild")
 	}
 
 	grandChild := &child.Children[0]
@@ -525,8 +521,7 @@ func TestParse_WorksWithCompoundObject(t *testing.T) {
 
 	result, error := Parse([]rune(builder.String()))
 	if error != nil {
-		t.Errorf("Expected Parse to succeed. Got error: %v", error)
-		return
+		t.Fatalf("Expected Parse to succeed. Got error: %v", error)
 	}
 
 	root := &result.Root
@@ -540,8 +535,7 @@ func TestParse_WorksWithCompoundObject(t *testing.T) {
 	}
 
 	if len(root.Children) != 2 {
-		t.Errorf("Root should have 2 child elements. Got %v", len(root.Children))
-		return
+		t.Fatalf("Root should have 2 child elements. Got %v", len(root.Children))
 	}
 
 	head := root.Children[0]
@@ -560,8 +554,7 @@ func TestParse_WorksWithCompoundObject(t *testing.T) {
 	}
 
 	if len(body.Children) != 2 {
-		t.Errorf("Body element should have 2 children. It has %v", len(body.Children))
-		return
+		t.Fatalf("Body element should have 2 children. It has %v", len(body.Children))
 	}
 
 	first_p := body.Children[0]

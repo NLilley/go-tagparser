@@ -16,13 +16,13 @@ var useStdIn bool
 func setupCommandLine() {
 	flag.Usage = func() {
 		w := flag.CommandLine.Output()
-		fmt.Fprintln(w, "\njsonify - Simple Tag Document Jsonification")
+		fmt.Fprintln(w, "\ntagJsonify - Simple Tag Document Jsonification")
 		fmt.Fprintln(w, "-------------------------------------")
 		fmt.Fprintln(w, "This program will convert your json input into a simple json file.")
 		fmt.Fprintln(w, "You must specify either -i to provide an input file, or -stdin to read your input from standard in.")
 		fmt.Fprintln(w, "Output will be written to standard out.")
 		fmt.Fprintln(w, "Invalid input will result in an error log and program termination.")
-		fmt.Fprintln(w, "Arguments:")
+		fmt.Fprintln(w, "\nArguments:")
 		flag.PrintDefaults()
 
 		fmt.Fprintln(w, "\nExamples:")
@@ -30,8 +30,8 @@ func setupCommandLine() {
 		fmt.Fprintln(w, "\techo \"<div>Hello, World!</div>\" | tagJsonify -stdin")
 	}
 
-	flag.StringVar(&inputPath, "i", "", "Path to input tag document. If not provided, the document will be read from stdin instead")
-	flag.BoolVar(&useStdIn, "stdin", false, "Take input from stdin")
+	flag.StringVar(&inputPath, "i", "", "Read Tag Document from a file. You must provide the path to the tag document.")
+	flag.BoolVar(&useStdIn, "stdin", false, "Read Tag Document from stdin.")
 	flag.Parse()
 }
 
